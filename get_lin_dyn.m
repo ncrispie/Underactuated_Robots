@@ -2,10 +2,10 @@ function [A, B] = get_lin_dyn(theta)
 %get_lin_dyn returns the linearized dynamics: q_dot = A*q + B*u
 %   theta: vector of length 4, current position of the four links
 
-L1 = 1; L2 = 1; L3 = 1; L4 = 1;
-m1 = 1; m2 = 1; m3 = 1; m4 = 1;
-b1 = 0.1; b2 = 0.2; b3 = 0.3; b4 = 0.4;
-g = 9.81;
+L1 = 1; L2 = 1; L3 = 1; L4 = 1; % link lengths
+m1 = 1; m2 = 1; m3 = 1; m4 = 1; % link inerias 
+b1 = 0.1; b2 = 0.2; b3 = 0.3; b4 = 0.4; % link dampings
+g = 9.81; % gravitational constant
 
 %formulate state matrices
 A1 = m1*g*L1/2*sin(theta(1)) + m2*g*(L1*sin(theta(1)) + L2/2*sin(theta(1)+theta(2))) ...

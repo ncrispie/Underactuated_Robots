@@ -20,7 +20,7 @@ xee = [2;-4]; %Desired end effector location
 dt =.01; %time step
 counter = 0;
 
-for i = 0:dt:6 %End time should be adjusted for the desired accuracy
+for i = 0:dt:15 %End time should be adjusted for the desired accuracy
 
 %Jacobian (2x3) Partial xee with respect to Theta1,2,3
 J= [-L1*sin(Theta1)-L2*sin(Theta1+Theta2)-L3*sin(Theta1+Theta2+Theta3)-L4*sin(Theta1+Theta2+Theta3+Theta4),...

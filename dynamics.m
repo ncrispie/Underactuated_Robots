@@ -3,14 +3,16 @@ Q = eye(8);
 R = eye(4);
 
 % initial state
-theta = [pi/4 ; pi/6 ; -pi/3 ; pi/4];
+q = [pi/4 ; pi/6 ; -pi/3 ; pi/4];
+u = [0 ; 0 ; 0 ; 0];
 
 %TODO" Compute cost
 
-[A, B] = get_lin_dyn(theta);
+[A, B] = get_lin_dyn(q);
 
 %this yields
-qdot = A*q + B*u;
+q_dot_lin = A*q + B*u;
+q_dot = 
 %q =
 %[theta1,theta2,theta3,theta3,theta4,...
 %theta1_dot,theta2_dot,theta3_dot,theta4_dot]'
