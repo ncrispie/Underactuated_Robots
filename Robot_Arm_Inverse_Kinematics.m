@@ -79,9 +79,3 @@ Theta4 = Theta4 + dt*theta4;
 counter = counter +1;
 
 end
-
-
-
-
-
-
