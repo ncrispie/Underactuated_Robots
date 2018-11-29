@@ -29,7 +29,7 @@ A_se_block = diag([-b1/m1 -b2/m2 -b3/m3 -b4/m4]);
 %state dyanmics in matrix form
 A = [zeros(4), eye(4); A_sw_block, A_se_block];
 
-B = [0 0 0 0 1/m1 1/m2 1/m3 1/m4]';
+B = [zeros(4,4) ; diag([1/m1 1/m2 1/m3 1/m4])];
 
 C = eye(8);
 

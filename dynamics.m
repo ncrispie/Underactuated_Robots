@@ -3,7 +3,10 @@ Q = eye(8);
 R = eye(4);
 
 % initial state
-q = [pi/4 ; pi/6 ; -pi/3 ; pi/4];
+% theta = [pi/4 ; pi/6 ; -pi/3 ; pi/4];
+theta = [0 ; 0 ; 0 ; 0];
+theta_dot = [0 ; 0 ; 0 ; 0];
+q = [theta ; theta_dot];
 u = [0 ; 0 ; 0 ; 0];
 
 %TODO" Compute cost
@@ -12,7 +15,9 @@ u = [0 ; 0 ; 0 ; 0];
 
 %this yields
 q_dot_lin = A*q + B*u;
-q_dot = 
+
+q_ddot = get_dyn(theta, theta_dot, u);
+
 %q =
 %[theta1,theta2,theta3,theta3,theta4,...
 %theta1_dot,theta2_dot,theta3_dot,theta4_dot]'
