@@ -4,9 +4,7 @@ R = eye(4);
 
 % initial state
 % theta = [pi/4 ; pi/6 ; -pi/3 ; pi/4];
-theta = [0 ; 0 ; 0 ; 0];
-theta_dot = [0 ; 0 ; 0 ; 0];
-q = [theta ; theta_dot];
+q = [pi/4 ; 0 ; 0 ; 0 ; 0 ; 0 ; 0 ; 0];
 u = [0 ; 0 ; 0 ; 0];
 
 %TODO" Compute cost
@@ -16,7 +14,7 @@ u = [0 ; 0 ; 0 ; 0];
 %this yields
 q_dot_lin = A*q + B*u;
 
-q_ddot = get_dyn(theta, theta_dot, u);
+q_dot_nonlin = get_dyn(q, u);
 
 %q =
 %[theta1,theta2,theta3,theta3,theta4,...

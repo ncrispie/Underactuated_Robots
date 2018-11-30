@@ -1,9 +1,13 @@
-function [theta_ddot] = get_dyn(theta, theta_dot, u)
+function [q_dot] = get_dyn(q, u)
 %get_dyn returns the theta_dot based on nonlinear dynamics
-%   theta: vector of length 4, current position of the four links
+%   q: vector of length 8, current positions & velocities of the four links
+%   q = [t1 ; t2 ; t3 ; t4 ; tdot1 ; tdot2 ; tdot3 ; tdot4]
 %   u: vector of length 4, input at each of the four links
 
 % construct A*x_ddot = B*x_dot + C*X + D
+
+theta = q(1:4);
+theta_dot = q(5:8);
 
 L1 = 1; L2 = 1; L3 = 1; L4 = 1; % link lengths
 m1 = 1; m2 = 1; m3 = 1; m4 = 1; % link masses 
@@ -73,6 +77,8 @@ end
 D = u;
 
 theta_ddot = inv(A) * (B*theta_dot + C + D);
+
+q_dot = [theta_dot ; theta_ddot];
 
 end
 

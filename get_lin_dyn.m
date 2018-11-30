@@ -3,7 +3,7 @@ function [A, B] = get_lin_dyn(theta)
 %   theta: vector of length 4, current position of the four links
 
 L1 = 1; L2 = 1; L3 = 1; L4 = 1; % link lengths
-m1 = 1; m2 = 1; m3 = 1; m4 = 1; % link inerias 
+m1 = 1/12; m2 = 1/12; m3 = 1/12; m4 = 1/12; % link inerias 
 b1 = 0.1; b2 = 0.2; b3 = 0.3; b4 = 0.4; % link dampings
 g = 9.81; % gravitational constant
 
