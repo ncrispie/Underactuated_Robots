@@ -41,8 +41,9 @@ B_0 = B(x_0, u_0);
 % generate desired trajectory
 x_nominal = zeros(N, 8);
 u_nominal = zeros(N, 4);
-x_nominal(1, :) = [0 ; pi ; pi ; -pi/2 ; 0 ; 0 ; 0 ; 0]; % start at (1,-1)
-x_desired = [0 ; 0 ; pi/2 ; 0 ; 0 ; 0 ; 0 ; 0]; % end at (2,2)
+% x_nominal(1, :) = [0 ; pi ; 0 ; pi/2 ; 0 ; 0 ; 0 ; 0]; % start at (1,-1)
+x_nominal(1, :) = [0 ; 0 ; 0 ; pi/8 ; 0 ; 0 ; 0 ; 0]; % start at (4,0)
+x_desired = [0 ; 0 ; -pi/2 ; -pi/2 ; 0 ; 0 ; 0 ; 0]; % end at (2,2)
 Kp = [0.1*eye(4) 0.5*eye(4)];
 for i = 1:N-1
     control = -Kp * (x_desired - x_nominal(i, :)');

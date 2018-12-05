@@ -92,8 +92,10 @@ C_coeffs(4) = g*L4*((1/2)*m4);
 C_state = sym('C_state', [4 1]);
 for i = 1:4
     % note that negative sin is a difference from the paper
-    % in the paper, zero theta is up and positive theta is counterclockwise
-    % we've flipped this convention and this is the *only* effect
+    % in the paper, zero theta is up and positive theta is clockwise
+    % we're adding pi to our thetas so that theta is now down, but positive
+    % is still clockwise
+    % this is the only effect
     C_state(i) = -sin(theta(i));
 end
 C = C_state .* C_coeffs;
