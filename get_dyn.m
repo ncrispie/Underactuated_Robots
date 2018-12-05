@@ -17,9 +17,16 @@ theta_dot = [x5 ; x6 ; x7 ; x8];
 syms u1 u2 u3 u4
 u = [u1 ; u2 ; u3 ; u4];
 
-load('dynamics_params.mat');
+syms b1 b2 b3 b4
+syms g
+syms I1 I2 I3 I4
+syms L1 L2 L3 L4
+syms m1 m2 m3 m4
 
-A_coeffs = zeros(4,4);
+% load('dynamics_params.mat');
+
+% A_coeffs = zeros(4,4);
+A_coeffs = sym('A_coeffs', [4 4]);
 A_coeffs(1,1) = (I1 + (m1/4 + m2 + m3 + m4)*L1^2);
 A_coeffs(1,2) = ((m2/2 + m3 + m4)*L1*L2);
 A_coeffs(1,3) = ((m3/2 + m4)*L1*L3);
@@ -44,10 +51,11 @@ for i = 1:4
 end
 A = A_state .* A_coeffs;
 
-B_coeffs = zeros(4,4);
+% B_coeffs = zeros(4,4);
+B_coeffs = sym('B_coeffs', [4 4]);
 B_coeffs(1,1) = (-b1-b2);
 B_coeffs(1,2) = (b2+(m2/2 + m3+m4)*L1*L2);
-B_coeffs(1,3) = ((m3/2 + m4)*L1*L2);
+B_coeffs(1,3) = ((m3/2 + m4)*L1*L3);
 B_coeffs(1,4) = (m4*L1*L4/2);
 B_coeffs(2,1) = (b2-(m2/2 + m3 + m4)*L1*L2);
 B_coeffs(2,2) = (-b2-b3);
@@ -75,7 +83,8 @@ for i = 1:4
 end
 B = B_state .* B_coeffs;
 
-C_coeffs = zeros(4,1);
+% C_coeffs = zeros(4,1);
+C_coeffs = sym('C_coeffs', [4 1]);
 C_coeffs(1) = g*L1*((1/2)*m1+m2+m3+m4);
 C_coeffs(2) = g*L2*((1/2)*m2+m3+m4);
 C_coeffs(3) = g*L3*((1/2)*m3+m4);
@@ -90,6 +99,10 @@ end
 C = C_state .* C_coeffs;
 
 D = u;
+
+% sub in params from file
+load('dynamics_params.mat');
+A = subs(A); B = subs(B); C = subs(C);
 
 % A\b is the same as inv(A)*b
 % note this is different from A/b
