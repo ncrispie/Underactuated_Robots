@@ -1,25 +1,25 @@
 load('dynamics_params.mat');
 
-N = 101; % number of points, meaning N-1 windows
+N = 1001; % number of points, meaning N-1 windows
 T = 10;
 dt = T / (N-1);
 
 % pick cost constants
 % we're leaving our various other costs: 
 % q_N, q_bold_N, q_n, q_bold_n, r_n, P_n
-Q_n = diag([1 1 1 1 1 1 1 1]);
+Q_n = diag([1 1 1 1 1 1]);
 Q_N = Q_n;
-R = diag([1 1 1 1]);
+R = diag([1 1 1]);
 
 % initial state
 % theta = 0 is straight down. theta positive is counter clockwise.
-x_0 = [pi/2 ; 0 ; 0 ; 0 ; 0 ; 0 ; 0 ; 0];
-u_0 = [0 ; 0 ; 0 ; 0];
-x_1 = [pi/2 ; 0 ; 0 ; 0 ; 0 ; 0 ; 0 ; 0];
-u_1 = [0 ; 0 ; 0 ; 0];
+x_0 = [pi/2 ; 0 ; 0 ; 0 ; 0 ; 0];
+u_0 = [0 ; 0 ; 0];
+x_1 = [pi/2 ; 0 ; 0 ; 0 ; 0 ; 0];
+u_1 = [0 ; 0 ; 0];
 
 % get symbolic derivatives
-[x, u, x_dot_nonlin_sym] = get_dyn();
+[x, u, x_dot_nonlin_sym] = get_dyn2();
 A_sym = jacobian(x_dot_nonlin_sym, x);
 B_sym = jacobian(x_dot_nonlin_sym, u);
 
@@ -39,12 +39,11 @@ A_0 = A(x_0, u_0);
 B_0 = B(x_0, u_0);
 
 % generate desired trajectory
-x_nominal = zeros(N, 8);
-u_nominal = zeros(N, 4);
-% x_nominal(1, :) = [0 ; pi ; 0 ; pi/2 ; 0 ; 0 ; 0 ; 0]; % start at (1,-1)
-x_nominal(1, :) = [0 ; 0 ; 0 ; pi/8 ; 0 ; 0 ; 0 ; 0]; % start at (4,0)
-x_desired = [0 ; 0 ; -pi/2 ; -pi/2 ; 0 ; 0 ; 0 ; 0]; % end at (2,2)
-Kp = [0.1*eye(4) 0.5*eye(4)];
+x_nominal = zeros(N, 6);
+u_nominal = zeros(N, 3);
+x_nominal(1, :) = [pi ; pi ; pi+0.01 ; 0 ; 0 ; 0];
+x_desired = [0 ; -pi/2 ; -pi/2 ; 0 ; 0 ; 0];
+Kp = [0.1*eye(3) 0.5*eye(3)];
 for i = 1:N-1
     control = -Kp * (x_desired - x_nominal(i, :)');
     control(control > 10) = 10; control(control < -10) = -10;
