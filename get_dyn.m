@@ -1,21 +1,23 @@
-function [q, u, q_dot] = get_dyn()
-%get_dyns returns the q_dot based on nonlinear dynamics
-%   q: vector of length 8, current positions & velocities of the four links
-%   q = [t1 ; t2 ; t3 ; t4 ; tdot1 ; tdot2 ; tdot3 ; tdot4]
+function [x, u, x_dot] = get_dyn()
+%get_dyns returns the x_dot based on nonlinear dynamics
+%   x: vector of length 8, current positions & velocities of the four links
+%   x = [t1 ; t2 ; t3 ; t4 ; tdot1 ; tdot2 ; tdot3 ; tdot4]
 %   u: vector of length 4, input at each of the four links
 
 % construct A*x_ddot = B*x_dot + C + D
+% refer to Dynamic Model and Motion Control Analysis of Three-link 
+% Gymnastic Robot on Horizontal Bar
+% we basically pattern matching the coefficients from this paper
 
-syms q1 q2 q3 q4 q5 q6 q7 q8
-q = [q1 ; q2 ; q3 ; q4 ; q5 ; q6 ; q7 ; q8];
-theta = [q1 ; q2 ; q3 ; q4];
-theta_dot = [q5 ; q6 ; q7 ; q8];
+syms x1 x2 x3 x4 x5 x6 x7 x8
+x = [x1 ; x2 ; x3 ; x4 ; x5 ; x6 ; x7 ; x8];
+theta = [x1 ; x2 ; x3 ; x4];
+theta_dot = [x5 ; x6 ; x7 ; x8];
 
 syms u1 u2 u3 u4
 u = [u1 ; u2 ; u3 ; u4];
 
 load('dynamics_params.mat');
-
 
 A_coeffs = zeros(4,4);
 A_coeffs(1,1) = (I1 + (m1/4 + m2 + m3 + m4)*L1^2);
@@ -84,9 +86,9 @@ C = C_state .* C_coeffs;
 
 D = u;
 
-theta_ddot = inv(A) * (B*theta_dot + C + D);
+theta_ddot = A \ (B*theta_dot + C + D);
 
-q_dot = [theta_dot ; theta_ddot];
+x_dot = [theta_dot ; theta_ddot];
 
 end
 
