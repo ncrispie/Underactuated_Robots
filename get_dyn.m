@@ -68,6 +68,8 @@ for i = 1:4
             k = max(i,j);
             n = min(i,j);
             B_state(i,j) = theta_dot(j) * sin(theta(k) - theta(n));
+        else
+            B_state(i,j) = 1;
         end
     end
 end
@@ -80,12 +82,17 @@ C_coeffs(3) = g*L3*((1/2)*m3+m4);
 C_coeffs(4) = g*L4*((1/2)*m4);
 C_state = sym('C_state', [4 1]);
 for i = 1:4
+    % note that negative sin is a difference from the paper
+    % in the paper, zero theta is up and positive theta is counterclockwise
+    % we've flipped this convention and this is the *only* effect
     C_state(i) = -sin(theta(i));
 end
 C = C_state .* C_coeffs;
 
 D = u;
 
+% A\b is the same as inv(A)*b
+% note this is different from A/b
 theta_ddot = A \ (B*theta_dot + C + D);
 
 x_dot = [theta_dot ; theta_ddot];
