@@ -7,8 +7,8 @@ R = eye(4);
 % initial state
 % theta = [pi/4 ; pi/6 ; -pi/3 ; pi/4];
 % theta = 0 is straight down. thetapositive is counter clockwise.
-q = [pi/2 ; 0 ; 0 ; 0 ; 0 ; 0 ; 0 ; 0];
-u = [0 ; 0 ; 0 ; 0];
+q_0 = [pi/2 ; 0 ; 0 ; 0 ; 0 ; 0 ; 0 ; 0];
+u_0 = [0 ; 0 ; 0 ; 0];
 
 %TODO" Compute cost
 
@@ -17,7 +17,19 @@ u = [0 ; 0 ; 0 ; 0];
 % this yields
 % q_dot_lin = A*q + B*u
 
-q_dot_nonlin = get_dyn(q, u)
+% q_dot_nonlin = get_dyn(q, u)
+
+% get symbolic derivatives and make lambda function accessors
+[q, u, q_dot_nonlin_sym] = get_dyn();
+q_dot_nonlin = @(q_eval, u_eval) double(subs(q_dot_nonlin_sym,  [q ; u], [q_eval ; u_eval]));
+q_dot_lin = @(q_about, u_about, q_eval, u_eval) ...
+    double(subs(taylor(q_dot_nonlin_sym, [q ; u], [q_about ; u_about],'Order', 2), ...
+    [q ; u], [q_eval ; u_eval]));
+
+% usage
+q_dot_lin(q_0, u_0, q_0, u_0);
+q_dot_nonlin_0 = q_dot_nonlin(q_0, u_0);
+
 
 % linearized constraints:
 % remember, linearize about the nominal trajectory
