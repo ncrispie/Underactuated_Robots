@@ -38,16 +38,12 @@ C_coeffs(2) = g*L2*((1/2)*m2);
 C_coeffs(3) = g*L3*((1/2)*m3);
 C_state = sym('C_state', [3 1]);
 for i = 1:3
-    % note that negative sin is a difference from the paper
     % in the paper, zero theta is up and positive theta is clockwise
-    % we're adding pi to our thetas so that theta is now down, but positive
-    % is still clockwise
-    % this is the only effect
     C_state(i) = sin(theta(i));
 end
 C = C_state .* C_coeffs;
 
-D = u;
+D = 5*u;
 
 % sub in params from file
 load('dynamics_params.mat');
