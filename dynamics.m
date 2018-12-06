@@ -141,24 +141,21 @@ S0 = zeros(N,1);
 S2(:,:,N) = Q_N;
 S1(:,N) = zeros(6,1);
 S0(N) = 0;
-L = zeros(3, 6, N);
-l = zeros(3, 1, N);
+L_n = zeros(3, 6, N);
+l_n = zeros(3, 1, N);
 for n = N-1:-1:1
     disp(n)
     h = r_tilde_n(:,:,n) + B_tilde_n(:,:,n)' * (S1(:,n+1)+ S2(:,:,n+1)*g_tilde_n(:,:,n));
     G = P_tilde_n(:,:,n) + B_tilde_n(:,:,n)' * S2(:,:,n+1) * A_tilde_n(:,:,n);
     H = R_tilde_n(:,:,n) + B_tilde_n(:,:,n)' * S2(:,:,n+1) * B_tilde_n(:,:,n);
-    l_temp = -pinv(H)*h;
-    L_temp = -pinv(H)*G;
+    L_n(:,:,n) = -pinv(H)*G;
+    l_n(:,:,n) = -pinv(H)*h;
     
-    S2(:,:,n) = Q_tilde_n(:,:,n) + A_tilde_n(:,:,n)'*S2(:,:,n+1)*A_tilde_n(:,:,n) - L_temp'*H*L_temp;
+    S2(:,:,n) = Q_tilde_n(:,:,n) + A_tilde_n(:,:,n)'*S2(:,:,n+1)*A_tilde_n(:,:,n) - L_n(:,:,n)'*H*L_n(:,:,n);
     S1(:,n) = q_bold_tilde_n(:,:,n) + A_tilde_n(:,:,n)' * ( S1(:,n+1) + S2(:,:,n+1) * g_tilde_n(:,:,n) ) + ...
-        G'*l_temp + L_temp' * (h+H*l_temp);
+        G'*l_n(:,:,n) + L_n(:,:,n)' * (h+H*l_n(:,:,n));
     S0(n) = q_tilde_n(:,:,n) + S0(n+1) + g_tilde_n(:,:,n)'*S1(:,n+1) + (1/2)*g_tilde_n(:,:,n)'*S2(:,:,n+1)*g_tilde_n(:,:,n) ...
-        + l_temp' * (h + (1/2)*H*l_temp);
-    
-    l(:,:,n) = l_temp;
-    L(:,:,n) = L_temp;
+        + l_n(:,:,n)' * (h + (1/2)*H*l_n(:,:,n));
 end
 
 %L: [3 6]
@@ -167,14 +164,12 @@ end
 % h [ 3 1]
 
 %line search
-alpha = 0;
 sigma = 1;
 u_candidate = zeros(3,N);
 x_candidate = zeros(6,N);
 x_candidate(:,1) = x_nominal(:,1); %preseed with initial value;
-merit_init = 0; %some initial merit
 merit = 0;
-
+alpha = 0;
 for n = 1:1:N-1
     u_candidate(:,n) = u_nominal(:,n) + alpha * ( epsilon_n(:,:,n) + Proj_n(:,:,n)*l(:,:,n) )...
         + (U_n(:,:,n) + Proj_n(:,:,n)*L(:,:,n)) * (x_candidate(:,n) - x_nominal(:,n));  
@@ -182,10 +177,11 @@ for n = 1:1:N-1
     x_mid = x_candidate(:, n) + k1*dt/2;
     k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
     x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
-    merit = merit + u_candidate'*R*u_candidate + sigma*abs( d_n(:,n+1) );
+    merit = merit + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(:,n+1) );
 end
 
 alpha = 1;
+merit0 = merit;
 
 %same thing, find merit for alpha = 1
 
