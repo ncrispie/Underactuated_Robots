@@ -82,144 +82,151 @@ C_N = @(x_n) [L1*sin(x_n(1))  L2*sin(x_n(2))  L3*sin(x_n(3)) 0 0 0 ; ...
              -L1*cos(x_n(1)) -L2*cos(x_n(2)) -L3*cos(x_n(3)) 0 0 0];
 d_N = @(x_n) -g3(x_n,0);
 
-% begin forward pass
-A_n = zeros(6,6,N);
-B_n = zeros(6,3,N);
-M_n = zeros(1,3,N);
-N_n = zeros(1,6,N);
-Proj_n = zeros(3,3,N);
-epsilon_n = zeros(3,1,N);
-U_n = zeros(3,6,N);
-A_tilde_n = zeros(6,6,N);
-B_tilde_n = zeros(6,3,N);
-g_tilde_n = zeros(6,1,N);
-q_tilde_n = zeros(1,1,N);
-q_bold_tilde_n = zeros(6,1,N);
-Q_tilde_n = zeros(6,6,N);
-r_tilde_n = zeros(3,1,N);
-R_tilde_n = zeros(3,3,N);
-P_tilde_n = zeros(3,6,N);
-A_n(:,:,N) = A(x_nominal(:,N), u_nominal(:,N));
-B_n(:,:,N) = B(x_nominal(:,N), u_nominal(:,N));
-for n = N-1:-1:1
-    disp(n)
-    A_n(:,:,n) = A(x_nominal(:, n), u_nominal(:, n));
-    B_n(:,:,n) = B(x_nominal(:, n), u_nominal(:, n));
+%BIG LOOP START
+
+for big_looper = 1:3
     
-    M_n(:,:,n) = C_n(x_nominal(:, n+1)) * A_n(:,:,n+1) * B_n(:,:,n);
-    N_n(:,:,n) = C_n(x_nominal(:, n+1)) * A_n(:,:,n+1) * A_n(:,:,n);
-    
-    % eqn 13
-    w = null(M_n(:,:,n));
-    Proj_n(:,:,n) = w*inv(w'*w)*w';
-    
-    % eqn 15
-    epsilon_n(:,:,n) = pinv(M_n(:,:,n))*d_n(x_nominal(:,n));
-    U_n(:,:,n) = -pinv(M_n(:,:,n))*N_n(:,:,n);
-    
-    % eqn 17
-    A_tilde_n(:,:,n) = A_n(:,:,n) + B_n(:,:,n)*U_n(:,:,n);
-    B_tilde_n(:,:,n) = B_n(:,:,n) * Proj_n(:,:,n);
-    g_tilde_n(:,:,n) = B_n(:,:,n) * epsilon_n(:,:,n);
-    
-    q_tilde_n(:,:,n) = epsilon_n(:,:,n)' * R * epsilon_n(:,:,n)/2; % 20
-    q_bold_tilde_n(:,:,n) = U_n(:,:,n)' * R * epsilon_n(:,:,n); % 21
-    Q_tilde_n(:,:,n) = Q_n + U_n(:,:,n)' * R * U_n(:,:,n); % 22
-    r_tilde_n(:,:,n) = Proj_n(:,:,n)*R*epsilon_n(:,:,n); % 23
-    R_tilde_n(:,:,n) = Proj_n(:,:,n)*R*Proj_n(:,:,n); % 24
-    P_tilde_n(:,:,n) = Proj_n(:,:,n)*R*U_n(:,:,n); % 25
-end
+    % begin forward pass
+    A_n = zeros(6,6,N);
+    B_n = zeros(6,3,N);
+    M_n = zeros(1,3,N);
+    N_n = zeros(1,6,N);
+    Proj_n = zeros(3,3,N);
+    epsilon_n = zeros(3,1,N);
+    U_n = zeros(3,6,N);
+    A_tilde_n = zeros(6,6,N);
+    B_tilde_n = zeros(6,3,N);
+    g_tilde_n = zeros(6,1,N);
+    q_tilde_n = zeros(1,1,N);
+    q_bold_tilde_n = zeros(6,1,N);
+    Q_tilde_n = zeros(6,6,N);
+    r_tilde_n = zeros(3,1,N);
+    R_tilde_n = zeros(3,3,N);
+    P_tilde_n = zeros(3,6,N);
+    A_n(:,:,N) = A(x_nominal(:,N), u_nominal(:,N));
+    B_n(:,:,N) = B(x_nominal(:,N), u_nominal(:,N));
+    for n = N-1:-1:1
+        disp(n)
+        A_n(:,:,n) = A(x_nominal(:, n), u_nominal(:, n));
+        B_n(:,:,n) = B(x_nominal(:, n), u_nominal(:, n));
 
-% big S is S2 (8x8)
-% little s bold is S1 (8x1)
-% little s is S0 (scalar)
+        M_n(:,:,n) = C_n(x_nominal(:, n+1)) * A_n(:,:,n+1) * B_n(:,:,n);
+        N_n(:,:,n) = C_n(x_nominal(:, n+1)) * A_n(:,:,n+1) * A_n(:,:,n);
 
-% eqn 29
-S2 = zeros(6,6,N);
-S1 = zeros(6,1,N);
-S0 = zeros(N,1);
-S2(:,:,N) = Q_N;
-S1(:,N) = zeros(6,1);
-S0(N) = 0;
-L_n = zeros(3, 6, N);
-l_n = zeros(3, 1, N);
-for n = N-1:-1:1
-    disp(n)
-    h = r_tilde_n(:,:,n) + B_tilde_n(:,:,n)' * (S1(:,n+1)+ S2(:,:,n+1)*g_tilde_n(:,:,n));
-    G = P_tilde_n(:,:,n) + B_tilde_n(:,:,n)' * S2(:,:,n+1) * A_tilde_n(:,:,n);
-    H = R_tilde_n(:,:,n) + B_tilde_n(:,:,n)' * S2(:,:,n+1) * B_tilde_n(:,:,n);
-    L_n(:,:,n) = -pinv(H)*G;
-    l_n(:,:,n) = -pinv(H)*h;
-    
-    S2(:,:,n) = Q_tilde_n(:,:,n) + A_tilde_n(:,:,n)'*S2(:,:,n+1)*A_tilde_n(:,:,n) - L_n(:,:,n)'*H*L_n(:,:,n);
-    S1(:,n) = q_bold_tilde_n(:,:,n) + A_tilde_n(:,:,n)' * ( S1(:,n+1) + S2(:,:,n+1) * g_tilde_n(:,:,n) ) + ...
-        G'*l_n(:,:,n) + L_n(:,:,n)' * (h+H*l_n(:,:,n));
-    S0(n) = q_tilde_n(:,:,n) + S0(n+1) + g_tilde_n(:,:,n)'*S1(:,n+1) + (1/2)*g_tilde_n(:,:,n)'*S2(:,:,n+1)*g_tilde_n(:,:,n) ...
-        + l_n(:,:,n)' * (h + (1/2)*H*l_n(:,:,n));
-end
+        % eqn 13
+        w = null(M_n(:,:,n));
+        Proj_n(:,:,n) = w*inv(w'*w)*w';
 
-%L: [3 6]
-% l [3 1]
-%H [3 3]
-% h [ 3 1]
+        % eqn 15
+        epsilon_n(:,:,n) = pinv(M_n(:,:,n))*d_n(x_nominal(:,n));
+        U_n(:,:,n) = -pinv(M_n(:,:,n))*N_n(:,:,n);
 
-%line search
-sigma = 1;
-u_candidate = zeros(3,N);
-x_candidate = zeros(6,N);
-x_candidate(:,1) = x_nominal(:,1); %preseed with initial value;
-merit0 = 0;
+        % eqn 17
+        A_tilde_n(:,:,n) = A_n(:,:,n) + B_n(:,:,n)*U_n(:,:,n);
+        B_tilde_n(:,:,n) = B_n(:,:,n) * Proj_n(:,:,n);
+        g_tilde_n(:,:,n) = B_n(:,:,n) * epsilon_n(:,:,n);
 
-%first get merit function for alpha = 0
-alpha = 0;
-for n = 1:1:N-1
-    disp(n)
-    u_candidate(:,n) = u_nominal(:,n) + alpha * ( epsilon_n(:,:,n) + Proj_n(:,:,n)*l_n(:,:,n) )...
-        + (U_n(:,:,n) + Proj_n(:,:,n)*L_n(:,:,n)) * (x_candidate(:,n) - x_nominal(:,n));  
-    k1 = x_dot_nonlin(x_candidate(:, n), u_candidate(:, n));
-    x_mid = x_candidate(:, n) + k1*dt/2;
-    k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
-    x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
-    merit0 = merit0 + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(x_candidate(:, n+1)) );
-end
+        q_tilde_n(:,:,n) = epsilon_n(:,:,n)' * R * epsilon_n(:,:,n)/2; % 20
+        q_bold_tilde_n(:,:,n) = U_n(:,:,n)' * R * epsilon_n(:,:,n); % 21
+        Q_tilde_n(:,:,n) = Q_n + U_n(:,:,n)' * R * U_n(:,:,n); % 22
+        r_tilde_n(:,:,n) = Proj_n(:,:,n)*R*epsilon_n(:,:,n); % 23
+        R_tilde_n(:,:,n) = Proj_n(:,:,n)*R*Proj_n(:,:,n); % 24
+        P_tilde_n(:,:,n) = Proj_n(:,:,n)*R*U_n(:,:,n); % 25
+    end
 
-%get merit function for alpha = 1
-alpha = 1;
-merit_alpha = 0;
-for n = 1:1:N-1
-    disp(n)
-    u_candidate(:,n) = u_nominal(:,n) + alpha * ( epsilon_n(:,:,n) + Proj_n(:,:,n)*l_n(:,:,n) )...
-        + (U_n(:,:,n) + Proj_n(:,:,n)*L_n(:,:,n)) * (x_candidate(:,n) - x_nominal(:,n));  
-    k1 = x_dot_nonlin(x_candidate(:, n), u_candidate(:, n));
-    x_mid = x_candidate(:, n) + k1*dt/2;
-    k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
-    x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
-    merit_alpha = merit_alpha + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(x_candidate(:, n+1)) );
-end
+    % big S is S2 (8x8)
+    % little s bold is S1 (8x1)
+    % little s is S0 (scalar)
 
-%compare and evaluate futher if necessary
-for iters = 1:13
-    disp(iters)
-    if merit_alpha < merit0
-        break %if find a merit less than previous merit, break
-    else
-        merit_alpha= 0;
-        alpha = alpha * 0.7;
-        %find a new merit
-        for n = 1:1:N-1
-            u_candidate(:,n) = u_nominal(:,n) + alpha * ( epsilon_n(:,:,n) + Proj_n(:,:,n)*l_n(:,:,n) )...
-                + (U_n(:,:,n) + Proj_n(:,:,n)*L_n(:,:,n)) * (x_candidate(:,n) - x_nominal(:,n));  
-            k1 = x_dot_nonlin(x_candidate(:, n), u_candidate(:, n));
-            x_mid = x_candidate(:, n) + k1*dt/2;
-            k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
-            x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
-            merit_alpha = merit_alpha + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(x_candidate(:, n+1)) );
+    % eqn 29
+    S2 = zeros(6,6,N);
+    S1 = zeros(6,1,N);
+    S0 = zeros(N,1);
+    S2(:,:,N) = Q_N;
+    S1(:,N) = zeros(6,1);
+    S0(N) = 0;
+    L_n = zeros(3, 6, N);
+    l_n = zeros(3, 1, N);
+    for n = N-1:-1:1
+        disp(n)
+        h = r_tilde_n(:,:,n) + B_tilde_n(:,:,n)' * (S1(:,n+1)+ S2(:,:,n+1)*g_tilde_n(:,:,n));
+        G = P_tilde_n(:,:,n) + B_tilde_n(:,:,n)' * S2(:,:,n+1) * A_tilde_n(:,:,n);
+        H = R_tilde_n(:,:,n) + B_tilde_n(:,:,n)' * S2(:,:,n+1) * B_tilde_n(:,:,n);
+        L_n(:,:,n) = -pinv(H)*G;
+        l_n(:,:,n) = -pinv(H)*h;
+
+        S2(:,:,n) = Q_tilde_n(:,:,n) + A_tilde_n(:,:,n)'*S2(:,:,n+1)*A_tilde_n(:,:,n) - L_n(:,:,n)'*H*L_n(:,:,n);
+        S1(:,n) = q_bold_tilde_n(:,:,n) + A_tilde_n(:,:,n)' * ( S1(:,n+1) + S2(:,:,n+1) * g_tilde_n(:,:,n) ) + ...
+            G'*l_n(:,:,n) + L_n(:,:,n)' * (h+H*l_n(:,:,n));
+        S0(n) = q_tilde_n(:,:,n) + S0(n+1) + g_tilde_n(:,:,n)'*S1(:,n+1) + (1/2)*g_tilde_n(:,:,n)'*S2(:,:,n+1)*g_tilde_n(:,:,n) ...
+            + l_n(:,:,n)' * (h + (1/2)*H*l_n(:,:,n));
+    end
+
+    %L: [3 6]
+    % l [3 1]
+    %H [3 3]
+    % h [ 3 1]
+
+    %line search
+    sigma = 1;
+    u_candidate = zeros(3,N);
+    x_candidate = zeros(6,N);
+    x_candidate(:,1) = x_nominal(:,1); %preseed with initial value;
+    merit0 = 0;
+
+    %first get merit function for alpha = 0
+    alpha = 0;
+    for n = 1:1:N-1
+        disp(n)
+        u_candidate(:,n) = u_nominal(:,n) + alpha * ( epsilon_n(:,:,n) + Proj_n(:,:,n)*l_n(:,:,n) )...
+            + (U_n(:,:,n) + Proj_n(:,:,n)*L_n(:,:,n)) * (x_candidate(:,n) - x_nominal(:,n));  
+        k1 = x_dot_nonlin(x_candidate(:, n), u_candidate(:, n));
+        x_mid = x_candidate(:, n) + k1*dt/2;
+        k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
+        x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
+        merit0 = merit0 + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(x_candidate(:, n+1)) );
+    end
+
+    %get merit function for alpha = 1
+    alpha = 1;
+    merit_alpha = 0;
+    for n = 1:1:N-1
+        disp(n)
+        u_candidate(:,n) = u_nominal(:,n) + alpha * ( epsilon_n(:,:,n) + Proj_n(:,:,n)*l_n(:,:,n) )...
+            + (U_n(:,:,n) + Proj_n(:,:,n)*L_n(:,:,n)) * (x_candidate(:,n) - x_nominal(:,n));  
+        k1 = x_dot_nonlin(x_candidate(:, n), u_candidate(:, n));
+        x_mid = x_candidate(:, n) + k1*dt/2;
+        k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
+        x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
+        merit_alpha = merit_alpha + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(x_candidate(:, n+1)) );
+    end
+
+    %compare and evaluate futher if necessary
+    for iters = 1:13
+        disp(iters)
+        if merit_alpha < merit0
+            break %if find a merit less than previous merit, break
+        else
+            merit_alpha= 0;
+            alpha = alpha * 0.7;
+            %find a new merit
+            for n = 1:1:N-1
+                u_candidate(:,n) = u_nominal(:,n) + alpha * ( epsilon_n(:,:,n) + Proj_n(:,:,n)*l_n(:,:,n) )...
+                    + (U_n(:,:,n) + Proj_n(:,:,n)*L_n(:,:,n)) * (x_candidate(:,n) - x_nominal(:,n));  
+                k1 = x_dot_nonlin(x_candidate(:, n), u_candidate(:, n));
+                x_mid = x_candidate(:, n) + k1*dt/2;
+                k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
+                x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
+                merit_alpha = merit_alpha + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(x_candidate(:, n+1)) );
+            end
         end
     end
-end
 
-u_nominal = u_candidate;
-x_nominal = x_candidate;
+    u_nominal = u_candidate;
+    x_nominal = x_candidate;
+    
+    disp(big_looper);
+end
 
 
 
