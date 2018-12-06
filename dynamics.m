@@ -169,28 +169,57 @@ u_candidate = zeros(3,N);
 x_candidate = zeros(6,N);
 x_candidate(:,1) = x_nominal(:,1); %preseed with initial value;
 merit = 0;
+
+%first get merit function for alpha = 0
 alpha = 0;
 for n = 1:1:N-1
-    u_candidate(:,n) = u_nominal(:,n) + alpha * ( epsilon_n(:,:,n) + Proj_n(:,:,n)*l(:,:,n) )...
-        + (U_n(:,:,n) + Proj_n(:,:,n)*L(:,:,n)) * (x_candidate(:,n) - x_nominal(:,n));  
+    disp(n)
+    u_candidate(:,n) = u_nominal(:,n) + alpha * ( epsilon_n(:,:,n) + Proj_n(:,:,n)*l_n(:,:,n) )...
+        + (U_n(:,:,n) + Proj_n(:,:,n)*L_n(:,:,n)) * (x_candidate(:,n) - x_nominal(:,n));  
     k1 = x_dot_nonlin(x_candidate(:, n), u_candidate(:, n));
     x_mid = x_candidate(:, n) + k1*dt/2;
     k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
     x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
-    merit = merit + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(:,n+1) );
+    merit = merit + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(x_candidate(:, n+1)) );
 end
 
+%get merit function for alpha = 1
 alpha = 1;
 merit0 = merit;
 
-%same thing, find merit for alpha = 1
+for n = 1:1:N-1
+    disp(n)
+    u_candidate(:,n) = u_nominal(:,n) + alpha * ( epsilon_n(:,:,n) + Proj_n(:,:,n)*l_n(:,:,n) )...
+        + (U_n(:,:,n) + Proj_n(:,:,n)*L_n(:,:,n)) * (x_candidate(:,n) - x_nominal(:,n));  
+    k1 = x_dot_nonlin(x_candidate(:, n), u_candidate(:, n));
+    x_mid = x_candidate(:, n) + k1*dt/2;
+    k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
+    x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
+    merit = merit + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(x_candidate(:, n+1)) );
+end
+
+merit1 = merit;
 
 %compare and evaluate futher if necessary
 for iters = 1:13
+    disp(iters)
     if merit1 < merit0
-        break
+        break %if find a merit less than previous merit, break
     else
-        alpha = alpha = 0.7;
+        alpha = alpha * 0.7;
         %find a new merit
+        for n = 1:1:N-1
+            u_candidate(:,n) = u_nominal(:,n) + alpha * ( epsilon_n(:,:,n) + Proj_n(:,:,n)*l_n(:,:,n) )...
+                + (U_n(:,:,n) + Proj_n(:,:,n)*L_n(:,:,n)) * (x_candidate(:,n) - x_nominal(:,n));  
+            k1 = x_dot_nonlin(x_candidate(:, n), u_candidate(:, n));
+            x_mid = x_candidate(:, n) + k1*dt/2;
+            k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
+            x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
+            merit = merit + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(x_candidate(:, n+1)) );
+        end
+        merit0 = merit1;
+        merit1 = merit;
+    end
+end
 
 
