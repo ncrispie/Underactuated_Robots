@@ -168,7 +168,7 @@ sigma = 1;
 u_candidate = zeros(3,N);
 x_candidate = zeros(6,N);
 x_candidate(:,1) = x_nominal(:,1); %preseed with initial value;
-merit = 0;
+merit0 = 0;
 
 %first get merit function for alpha = 0
 alpha = 0;
@@ -180,13 +180,12 @@ for n = 1:1:N-1
     x_mid = x_candidate(:, n) + k1*dt/2;
     k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
     x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
-    merit = merit + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(x_candidate(:, n+1)) );
+    merit0 = merit0 + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(x_candidate(:, n+1)) );
 end
 
 %get merit function for alpha = 1
 alpha = 1;
-merit0 = merit;
-
+merit_alpha = 0;
 for n = 1:1:N-1
     disp(n)
     u_candidate(:,n) = u_nominal(:,n) + alpha * ( epsilon_n(:,:,n) + Proj_n(:,:,n)*l_n(:,:,n) )...
@@ -195,17 +194,16 @@ for n = 1:1:N-1
     x_mid = x_candidate(:, n) + k1*dt/2;
     k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
     x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
-    merit = merit + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(x_candidate(:, n+1)) );
+    merit_alpha = merit_alpha + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(x_candidate(:, n+1)) );
 end
-
-merit1 = merit;
 
 %compare and evaluate futher if necessary
 for iters = 1:13
     disp(iters)
-    if merit1 < merit0
+    if merit_alpha < merit0
         break %if find a merit less than previous merit, break
     else
+        merit_alpha= 0;
         alpha = alpha * 0.7;
         %find a new merit
         for n = 1:1:N-1
@@ -215,11 +213,14 @@ for iters = 1:13
             x_mid = x_candidate(:, n) + k1*dt/2;
             k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
             x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
-            merit = merit + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(x_candidate(:, n+1)) );
+            merit_alpha = merit_alpha + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(x_candidate(:, n+1)) );
         end
-        merit0 = merit1;
-        merit1 = merit;
     end
 end
+
+u_nominal = u_candidate;
+x_nominal = x_candidate;
+
+
 
 
