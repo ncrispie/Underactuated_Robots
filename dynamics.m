@@ -49,11 +49,18 @@ x_desired = [2*pi/3 ; -pi/2 ; 2*pi/3 ; 0 ; 0 ; 0];
 K = [10*eye(3) 2*eye(3)];
 for n = 1:N-1
     disp(n)
+    
+    % get control
     control = K * (x_desired - x_nominal(:, n));
     % control(control > 10) = 10; control(control < -10) = -10;
     u_nominal(:, n) = control;
-    der = x_dot_nonlin(x_nominal(:, n), u_nominal(:, n));
-    x_nominal(:, n+1) = x_nominal(:, n) + dt*der;
+    
+    % 2nd order runge kutta
+    % refer to http://lpsa.swarthmore.edu/NumInt/NumIntSecond.html
+    k1 = x_dot_nonlin(x_nominal(:, n), u_nominal(:, n));
+    x_mid = x_nominal(:, n) + k1*dt/2;
+    k2 = x_dot_nonlin(x_mid, u_nominal(:, n));
+    x_nominal(:, n+1) = x_nominal(:, n) + dt*k2;
 end
 
 % nonlinear constraint
@@ -134,19 +141,60 @@ S0 = zeros(N,1);
 S2(:,:,N) = Q_N;
 S1(:,N) = zeros(6,1);
 S0(N) = 0;
+L = zeros(3, 6, N);
+l = zeros(3, 1, N);
 for n = N-1:-1:1
     disp(n)
     h = r_tilde_n(:,:,n) + B_tilde_n(:,:,n)' * (S1(:,n+1)+ S2(:,:,n+1)*g_tilde_n(:,:,n));
     G = P_tilde_n(:,:,n) + B_tilde_n(:,:,n)' * S2(:,:,n+1) * A_tilde_n(:,:,n);
     H = R_tilde_n(:,:,n) + B_tilde_n(:,:,n)' * S2(:,:,n+1) * B_tilde_n(:,:,n);
-    l = -pinv(H)*h;
-    L = -pinv(H)*G;
+    l_temp = -pinv(H)*h;
+    L_temp = -pinv(H)*G;
     
-    S2(:,:,n) = Q_tilde_n(:,:,n) + A_tilde_n(:,:,n)'*S2(:,:,n+1)*A_tilde_n(:,:,n) - L'*H*L;
+    S2(:,:,n) = Q_tilde_n(:,:,n) + A_tilde_n(:,:,n)'*S2(:,:,n+1)*A_tilde_n(:,:,n) - L_temp'*H*L_temp;
     S1(:,n) = q_bold_tilde_n(:,:,n) + A_tilde_n(:,:,n)' * ( S1(:,n+1) + S2(:,:,n+1) * g_tilde_n(:,:,n) ) + ...
-        G'*l + L' * (h+H*l);
+        G'*l_temp + L_temp' * (h+H*l_temp);
     S0(n) = q_tilde_n(:,:,n) + S0(n+1) + g_tilde_n(:,:,n)'*S1(:,n+1) + (1/2)*g_tilde_n(:,:,n)'*S2(:,:,n+1)*g_tilde_n(:,:,n) ...
-        + l' * (h + (1/2)*H*l);
+        + l_temp' * (h + (1/2)*H*l_temp);
+    
+    l(:,:,n) = l_temp;
+    L(:,:,n) = L_temp;
 end
 
+%L: [3 6]
+% l [3 1]
+%H [3 3]
+% h [ 3 1]
+
+%line search
 alpha = 0;
+sigma = 1;
+u_candidate = zeros(3,N);
+x_candidate = zeros(6,N);
+x_candidate(:,1) = x_nominal(:,1); %preseed with initial value;
+merit_init = 0; %some initial merit
+merit = 0;
+
+for n = 1:1:N-1
+    u_candidate(:,n) = u_nominal(:,n) + alpha * ( epsilon_n(:,:,n) + Proj_n(:,:,n)*l(:,:,n) )...
+        + (U_n(:,:,n) + Proj_n(:,:,n)*L(:,:,n)) * (x_candidate(:,n) - x_nominal(:,n));  
+    k1 = x_dot_nonlin(x_candidate(:, n), u_candidate(:, n));
+    x_mid = x_candidate(:, n) + k1*dt/2;
+    k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
+    x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
+    merit = merit + u_candidate'*R*u_candidate + sigma*abs( d_n(:,n+1) );
+end
+
+alpha = 1;
+
+%same thing, find merit for alpha = 1
+
+%compare and evaluate futher if necessary
+for iters = 1:13
+    if merit1 < merit0
+        break
+    else
+        alpha = alpha = 0.7;
+        %find a new merit
+
+
