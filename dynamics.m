@@ -84,8 +84,11 @@ d_N = @(x_n) -g3(x_n,0);
 
 %BIG LOOP START
 
-for big_looper = 1:10
-    
+big_loop_its = 10;
+x_nominal_history = zeros(6, N, big_loop_its+1);
+u_nominal_history = zeros(3, N, big_loop_its+1);
+merit_history = zeros(1, big_loop_its+1);
+for big_looper = 1:big_loop_its
     % begin forward pass
     A_n = zeros(6,6,N);
     B_n = zeros(6,3,N);
@@ -227,9 +230,18 @@ for big_looper = 1:10
             end
         end
     end
-
+    
+    % add to history
+    x_nominal_history(:, :, big_looper) = x_nominal;
+    u_nominal_history(:, :, big_looper) = u_nominal;
+    merit_history(big_looper) = merit0;
+    
     u_nominal = u_candidate;
     x_nominal = x_candidate;
     
     disp(big_looper);
 end
+
+x_nominal_history(:, :, end) = x_nominal;
+u_nominal_history(:, :, end) = u_nominal;
+merit_history(end) = merit_alpha;
