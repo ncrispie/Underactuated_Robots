@@ -7,7 +7,10 @@ dt = T / (N-1);
 % pick cost constants
 % we're leaving our various other costs: 
 % q_N, q_bold_N, q_n, q_bold_n, r_n, P_n
-Q_n = diag([1 1 1 1 1 1]);
+% test
+% Q_n = diag([1 1 1 1 1 1]);
+% Q_N = 10*Q_n;
+Q_n = diag([0 0 0 0 0 0]);
 Q_N = 10*Q_n;
 R = diag([1 1 1]);
 
@@ -66,12 +69,11 @@ g3 = @(x_n, n) [-1 - (L1*cos(x_n(1)) + L2*cos(x_n(2)) + L3*cos(x_n(3))); ...
 % linearized constraint
 % remember to linearize about the nominal trajectory!
 % the x_n passed in here should come from the nominal trajectory
-% apply to C_N and d_N also
 C_n = @(x_n) [L1*sin(x_n(1)) L2*sin(x_n(2)) L3*sin(x_n(3)) 0 0 0];
-d_n = 0;
+d_n = @(x_n) -g2(x_n,0);
 C_N = @(x_n) [L1*sin(x_n(1))  L2*sin(x_n(2))  L3*sin(x_n(3)) 0 0 0 ; ...
              -L1*cos(x_n(1)) -L2*cos(x_n(2)) -L3*cos(x_n(3)) 0 0 0];
-d_N = [0 ; 0];
+d_N = @(x_n) -g3(x_n,0);
 
 % begin forward pass
 A_n = zeros(6,6,N);
@@ -105,7 +107,7 @@ for n = N-1:-1:1
     Proj_n(:,:,n) = w*inv(w'*w)*w';
     
     % eqn 15
-    epsilon_n(:,:,n) = pinv(M_n(:,:,n))*d_n;
+    epsilon_n(:,:,n) = pinv(M_n(:,:,n))*d_n(x_nominal(:,n));
     U_n(:,:,n) = -pinv(M_n(:,:,n))*N_n(:,:,n);
     
     % eqn 17
