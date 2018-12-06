@@ -10,11 +10,11 @@ dt = T / (N-1);
 % test
 % Q_n = diag([1 1 1 1 1 1]);
 % Q_N = 10*Q_n;
-Q_n = diag([0 0 0 0 0 0]);
+Q_n = diag([0 0 0 10 10 10]);
 Q_N = 10*Q_n;
-R = diag([1 1 1]);
+R = 0.01*diag([1 1 1]);
 
-% theta = 0 is straight down. theta positive is clockwise.
+% theta = 0 is straight up. theta positive is clockwise.
 
 % get symbolic derivatives
 [x, u, x_dot_nonlin_sym] = get_dyn2();
@@ -84,7 +84,7 @@ d_N = @(x_n) -g3(x_n,0);
 
 %BIG LOOP START
 
-for big_looper = 1:3
+for big_looper = 1:10
     
     % begin forward pass
     A_n = zeros(6,6,N);
@@ -168,7 +168,7 @@ for big_looper = 1:3
     % h [ 3 1]
 
     %line search
-    sigma = 1;
+    sigma = 1000;
     u_candidate = zeros(3,N);
     x_candidate = zeros(6,N);
     x_candidate(:,1) = x_nominal(:,1); %preseed with initial value;
@@ -184,7 +184,9 @@ for big_looper = 1:3
         x_mid = x_candidate(:, n) + k1*dt/2;
         k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
         x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
-        merit0 = merit0 + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(x_candidate(:, n+1)) );
+        merit0 = merit0 + x_candidate(:,n)'*Q_n*x_candidate(:,n) ...
+            + u_candidate(:,n)'*R*u_candidate(:,n) ...
+            + sigma*abs( d_n(x_candidate(:, n+1)) );
     end
 
     %get merit function for alpha = 1
@@ -198,7 +200,9 @@ for big_looper = 1:3
         x_mid = x_candidate(:, n) + k1*dt/2;
         k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
         x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
-        merit_alpha = merit_alpha + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(x_candidate(:, n+1)) );
+        merit_alpha = merit_alpha + x_candidate(:,n)'*Q_n*x_candidate(:,n) ...
+            + u_candidate(:,n)'*R*u_candidate(:,n) ...
+            + sigma*abs( d_n(x_candidate(:, n+1)) );
     end
 
     %compare and evaluate futher if necessary
@@ -217,7 +221,9 @@ for big_looper = 1:3
                 x_mid = x_candidate(:, n) + k1*dt/2;
                 k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
                 x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
-                merit_alpha = merit_alpha + u_candidate(:,n)'*R*u_candidate(:,n) + sigma*abs( d_n(x_candidate(:, n+1)) );
+                merit_alpha = merit_alpha + x_candidate(:,n)'*Q_n*x_candidate(:,n) ...
+                    + u_candidate(:,n)'*R*u_candidate(:,n) ...
+                    + sigma*abs( d_n(x_candidate(:, n+1)) );
             end
         end
     end
@@ -227,7 +233,3 @@ for big_looper = 1:3
     
     disp(big_looper);
 end
-
-
-
-
