@@ -44,8 +44,10 @@ B = @(x_about, u_about) A_cont(x_about, u_about) \ (A(x_about, u_about) - eye(6)
 % generate desired trajectory
 x_nominal = zeros(6, N);
 u_nominal = zeros(3, N);
-x_nominal(:, 1) = [pi+0.01 ; -0.01 ; pi+0.01 ; 0 ; 0 ; 0];
-x_desired = [2*pi/3 ; -pi/2 ; 2*pi/3 ; 0 ; 0 ; 0];
+% x_nominal(:, 1) = [pi+0.01 ; -0.01 ; pi+0.01 ; 0 ; 0 ; 0];
+% x_desired = [2*pi/3 ; -pi/2 ; 2*pi/3 ; 0 ; 0 ; 0];
+x_nominal(:, 1) = [0.01 ; pi+0.01 ; pi/2 + 0.01 ; 0 ; 0 ; 0];
+x_desired = [-pi/3 ; pi/2 ; pi/3 ; 0 ; 0 ; 0];
 K = [10*eye(3) 2*eye(3)];
 for n = 1:N-1
     disp(n)
@@ -69,18 +71,21 @@ end
 % ee is end effector
 % ee_start = [1 ; -1];
 % ee_end = [1 ; 1];
-g2 = @(x_n, n) -1 - (L1*cos(x_n(1)) + L2*cos(x_n(2)) + L3*cos(x_n(3)));
-g3 = @(x_n, n) [-1 - (L1*cos(x_n(1)) + L2*cos(x_n(2)) + L3*cos(x_n(3))); ...
-    1 - (L1*sin(x_n(1)) + L2*sin(x_n(2)) + L3*sin(x_n(3)))];
+% g2 = @(x_n, n) -1 - (L1*cos(x_n(1)) + L2*cos(x_n(2)) + L3*cos(x_n(3)));
+% g3 = @(x_n, n) [-1 - (L1*cos(x_n(1)) + L2*cos(x_n(2)) + L3*cos(x_n(3))); ...
+%     1 - (L1*sin(x_n(1)) + L2*sin(x_n(2)) + L3*sin(x_n(3)))];
+g2 = @(x_n, n) 1 - (L1*sin(x_n(1)) + L2*sin(x_n(2)) + L3*sin(x_n(3)));
+% g3 = @(x_n, n) [-1 - (L1*cos(x_n(1)) + L2*cos(x_n(2)) + L3*cos(x_n(3))); ...
+%     1 - (L1*sin(x_n(1)) + L2*sin(x_n(2)) + L3*sin(x_n(3)))];
 
 % linearized constraint
 % remember to linearize about the nominal trajectory!
 % the x_n passed in here should come from the nominal trajectory
-C_n = @(x_n) [L1*sin(x_n(1)) L2*sin(x_n(2)) L3*sin(x_n(3)) 0 0 0];
-d_n = @(x_n) -g2(x_n,0);
-C_N = @(x_n) [L1*sin(x_n(1))  L2*sin(x_n(2))  L3*sin(x_n(3)) 0 0 0 ; ...
-             -L1*cos(x_n(1)) -L2*cos(x_n(2)) -L3*cos(x_n(3)) 0 0 0];
-d_N = @(x_n) -g3(x_n,0);
+C_n = @(x_n) [L1*cos(x_n(1)) L2*cos(x_n(2)) L3*cos(x_n(3)) 0 0 0];
+d_n = @(x_n) g2(x_n,0);
+% C_N = @(x_n) [L1*sin(x_n(1))  L2*sin(x_n(2))  L3*sin(x_n(3)) 0 0 0 ; ...
+%              -L1*cos(x_n(1)) -L2*cos(x_n(2)) -L3*cos(x_n(3)) 0 0 0];
+% d_N = @(x_n) -g3(x_n,0);
 
 %BIG LOOP START
 
