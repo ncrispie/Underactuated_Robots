@@ -47,7 +47,8 @@ u_nominal = zeros(3, N);
 % x_nominal(:, 1) = [pi+0.01 ; -0.01 ; pi+0.01 ; 0 ; 0 ; 0];
 % x_desired = [2*pi/3 ; -pi/2 ; 2*pi/3 ; 0 ; 0 ; 0];
 x_nominal(:, 1) = [0.01 ; pi+0.01 ; pi/2 + 0.01 ; 0 ; 0 ; 0];
-x_desired = [-pi/3 ; pi/2 ; pi/3 ; 0 ; 0 ; 0];
+% x_desired = [-pi/3 ; pi/2 ; pi/3 ; 0 ; 0 ; 0];
+x_desired = [-0.1959 ; 0.3583 ; 2.0885 ; 0 ; 0 ; 0];
 K = [10*eye(3) 2*eye(3)];
 for n = 1:N-1
     disp(n)

@@ -59,8 +59,8 @@ for n = 1:N-1
     % get control
     control = K * (x_desired - x_nominal(:, n));
     % control(control > 10) = 10; control(control < -10) = -10;
-    % u_nominal(:, n) = control;
-    u_nominal(:, n) = 0;
+    u_nominal(:, n) = control;
+    % u_nominal(:, n) = 0;
     
     % 2nd order runge kutta
     % refer to http://lpsa.swarthmore.edu/NumInt/NumIntSecond.html
@@ -135,7 +135,7 @@ for big_looper = 1:big_loop_its
     alpha = 0;
     for n = 1:1:N-1
         disp(n)
-        u_candidate(:,n) = u_nominal(:,n);  
+        u_candidate(:,n) = u_nominal(:,n) + l_n(:,:,n);  
         k1 = x_dot_nonlin(x_candidate(:, n), u_candidate(:, n));
         x_mid = x_candidate(:, n) + k1*dt/2;
         k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
@@ -152,7 +152,7 @@ for big_looper = 1:big_loop_its
     merit_alpha = 0;
     for n = 1:1:N-1
         disp(n)
-        u_candidate(:,n) = u_nominal(:,n) + alpha * (l_n(:,:,n) + L_n(:,:,n) * (x_candidate(:,n) - x_nominal(:,n)));  
+        u_candidate(:,n) = u_nominal(:,n) + l_n(:,:,n) + alpha * (L_n(:,:,n) * (x_candidate(:,n) - x_nominal(:,n)));  
         k1 = x_dot_nonlin(x_candidate(:, n), u_candidate(:, n));
         x_mid = x_candidate(:, n) + k1*dt/2;
         k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
@@ -174,7 +174,7 @@ for big_looper = 1:big_loop_its
             alpha = alpha * 0.5;
             %find a new merit
             for n = 1:1:N-1
-                u_candidate(:,n) = u_nominal(:,n) + alpha * (l_n(:,:,n) + L_n(:,:,n) * (x_candidate(:,n) - x_nominal(:,n)));  
+                u_candidate(:,n) = u_nominal(:,n) + l_n(:,:,n) + alpha * (L_n(:,:,n) * (x_candidate(:,n) - x_nominal(:,n)));  
                 k1 = x_dot_nonlin(x_candidate(:, n), u_candidate(:, n));
                 x_mid = x_candidate(:, n) + k1*dt/2;
                 k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
