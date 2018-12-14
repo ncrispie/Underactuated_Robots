@@ -9,11 +9,15 @@ dt = T / (N-1);
 % q_N, q_bold_N, q_n, q_bold_n, r_n, P_n
 % test
 % Q_n = diag([1 1 1 1 1 1]);
+cnst = 100;
+f_cnst = 10;
 Q_n = diag([0 0 0 10 10 10]);
-Q_n(1:3,1:3) = ones(3,3);
-Q_N = 10*Q_n;
-q_n = 1;
-q_bold_n = [-2 ; -2 ; -2 ; 0 ; 0 ; 0];
+Q_n(1:3,1:3) = cnst*ones(3,3);
+q_n = cnst*1;
+q_bold_n = cnst*[-2 ; -2 ; -2 ; 0 ; 0 ; 0];
+Q_N = f_cnst*Q_n;
+q_N = f_cnst*q_n;
+q_bold_N = f_cnst*q_bold_n;
 R = 0.01*diag([1 1 1]);
 
 % theta = 0 is straight up. theta positive is clockwise.
@@ -55,7 +59,8 @@ for n = 1:N-1
     % get control
     control = K * (x_desired - x_nominal(:, n));
     % control(control > 10) = 10; control(control < -10) = -10;
-    u_nominal(:, n) = control;
+    % u_nominal(:, n) = control;
+    u_nominal(:, n) = 0;
     
     % 2nd order runge kutta
     % refer to http://lpsa.swarthmore.edu/NumInt/NumIntSecond.html
@@ -94,20 +99,24 @@ for big_looper = 1:big_loop_its
     S1 = zeros(6,1,N);
     S0 = zeros(N,1);
     S2(:,:,N) = Q_N;
-    S1(:,N) = q_bold_n;
-    S0(N) = q_n;
+    S1(:,N) = q_bold_N;
+    S0(N) = q_N;
     g_n = zeros(3, 1, N);
     G_n = zeros(3, 6, N);
     H_n = zeros(3, 3, N);
+    L_n = zeros(3, 6, N);
+    l_n = zeros(3, 1, N);
     for n = N-1:-1:1
         disp(n)
         g_n(:,:,n) = B_n(:,:,n)' * S1(:,n+1);
         G_n(:,:,n) = B_n(:,:,n)' * S2(:,:,n+1) * A_n(:,:,n);
         H_n(:,:,n) = R + B_n(:,:,n)' * S2(:,:,n+1) * B_n(:,:,n);
+        L_n(:,:,n) = -pinv(H_n(:,:,n))*G_n(:,:,n);
+        l_n(:,:,n) = -pinv(H_n(:,:,n))*g_n(:,:,n);
 
-        S2(:,:,n) = Q_n + A_n(:,:,n)'*S2(:,:,n+1)*A_n(:,:,n) - G_n(:,:,n).'*pinv(H_n(:,:,n))*G_n(:,:,n);
-        S1(:,n) = q_bold_n + A_n(:,:,n)' * S1(:,n+1) - G_n(:,:,n)'*pinv(H_n(:,:,n))*g_n(:,:,n);
-        S0(n) = q_n + S0(n+1) + - (1/2)*g_n(:,:,n).'*pinv(H_n(:,:,n))*g_n(:,:,n);
+        S2(:,:,n) = Q_n + A_n(:,:,n)'*S2(:,:,n+1)*A_n(:,:,n) + G_n(:,:,n).'*L_n(:,:,n);
+        S1(:,n) = q_bold_n + A_n(:,:,n)' * S1(:,n+1) + G_n(:,:,n).'*l_n(:,:,n);
+        S0(n) = q_n + S0(n+1) + (1/2)*g_n(:,:,n).'*l_n(:,:,n);
     end
 
     %L: [3 6]
@@ -126,47 +135,56 @@ for big_looper = 1:big_loop_its
     alpha = 0;
     for n = 1:1:N-1
         disp(n)
-        u_candidate(:,n) = u_nominal(:,n) - alpha * (g_n(:,:,n) + G_n(:,:,n) * (x_candidate(:,n) - x_nominal(:,n)));  
+        u_candidate(:,n) = u_nominal(:,n);  
         k1 = x_dot_nonlin(x_candidate(:, n), u_candidate(:, n));
         x_mid = x_candidate(:, n) + k1*dt/2;
         k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
         x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
         merit0 = merit0 + x_candidate(:,n)'*Q_n*x_candidate(:,n) ...
+            + x_candidate(:,n)'*q_bold_n + q_n ...
             + u_candidate(:,n)'*R*u_candidate(:,n);
     end
+    merit0 = merit0 + x_candidate(:,end)'*Q_N*x_candidate(:,end) ...
+            + x_candidate(:,end)'*q_bold_N + q_N;
 
     %get merit function for alpha = 1
     alpha = 1;
     merit_alpha = 0;
     for n = 1:1:N-1
         disp(n)
-        u_candidate(:,n) = u_nominal(:,n) - alpha * (g_n(:,:,n) + G_n(:,:,n) * (x_candidate(:,n) - x_nominal(:,n)));  
+        u_candidate(:,n) = u_nominal(:,n) + alpha * (l_n(:,:,n) + L_n(:,:,n) * (x_candidate(:,n) - x_nominal(:,n)));  
         k1 = x_dot_nonlin(x_candidate(:, n), u_candidate(:, n));
         x_mid = x_candidate(:, n) + k1*dt/2;
         k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
         x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
         merit_alpha = merit_alpha + x_candidate(:,n)'*Q_n*x_candidate(:,n) ...
+            + x_candidate(:,n)'*q_bold_n + q_n ...
             + u_candidate(:,n)'*R*u_candidate(:,n);
     end
+    merit_alpha = merit_alpha + x_candidate(:,end)'*Q_N*x_candidate(:,end) ...
+            + x_candidate(:,end)'*q_bold_N + q_N;
 
     %compare and evaluate futher if necessary
-    for iters = 1:13
+    for iters = 1:6
         disp(iters)
         if merit_alpha < merit0
             break %if find a merit less than previous merit, break
         else
             merit_alpha= 0;
-            alpha = alpha * 0.7;
+            alpha = alpha * 0.5;
             %find a new merit
             for n = 1:1:N-1
-                u_candidate(:,n) = u_nominal(:,n) - alpha * (g_n(:,:,n) + G_n(:,:,n) * (x_candidate(:,n) - x_nominal(:,n)));  
+                u_candidate(:,n) = u_nominal(:,n) + alpha * (l_n(:,:,n) + L_n(:,:,n) * (x_candidate(:,n) - x_nominal(:,n)));  
                 k1 = x_dot_nonlin(x_candidate(:, n), u_candidate(:, n));
                 x_mid = x_candidate(:, n) + k1*dt/2;
                 k2 = x_dot_nonlin(x_mid, u_candidate(:, n));
                 x_candidate(:, n+1) = x_candidate(:, n) + dt*k2;
                 merit_alpha = merit_alpha + x_candidate(:,n)'*Q_n*x_candidate(:,n) ...
+                    + x_candidate(:,n)'*q_bold_n + q_n ...
                     + u_candidate(:,n)'*R*u_candidate(:,n);
             end
+            merit_alpha = merit_alpha + x_candidate(:,end)'*Q_N*x_candidate(:,end) ...
+                    + x_candidate(:,end)'*q_bold_N + q_N;
         end
     end
     
@@ -183,4 +201,4 @@ end
 
 x_nominal_history(:, :, end) = x_nominal;
 u_nominal_history(:, :, end) = u_nominal;
-merit_history(end) = merit_alpha;
+merit_history(end) = merit0;
